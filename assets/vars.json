@@ -1,0 +1,51 @@
+{
+  "api_key": "sk-local-kimi-k3-REPLACE-AT-BUILD",
+  "base_url": "http://127.0.0.1:8080/v1",
+  "model": "kimi-k3",
+  "codex": {
+    "darwin": {
+      "url": "https://github.com/openai/codex/releases/latest/download/codex-x86_64-apple-darwin.tar.gz",
+      "sha256": "",
+      "version": "latest",
+      "bin_name": "codex",
+      "archive": "tar.gz"
+    },
+    "linux": {
+      "url": "https://github.com/openai/codex/releases/latest/download/codex-x86_64-unknown-linux-musl.tar.gz",
+      "sha256": "",
+      "version": "latest",
+      "bin_name": "codex",
+      "archive": "tar.gz"
+    },
+    "windows": {
+      "url": "https://github.com/openai/codex/releases/latest/download/codex-x86_64-pc-windows-msvc.zip",
+      "sha256": "",
+      "version": "latest",
+      "bin_name": "codex",
+      "archive": "zip"
+    }
+  },
+  "claude": {
+    "darwin": {
+      "url": "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096ce9/claude-code-releases/latest/darwin/claude",
+      "sha256": "",
+      "version": "latest",
+      "bin_name": "claude",
+      "archive": "none"
+    },
+    "linux": {
+      "url": "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096ce9/claude-code-releases/latest/linux/claude",
+      "sha256": "",
+      "version": "latest",
+      "bin_name": "claude",
+      "archive": "none"
+    },
+    "windows": {
+      "url": "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096ce9/claude-code-releases/latest/windows/claude.exe",
+      "sha256": "",
+      "version": "latest",
+      "bin_name": "claude",
+      "archive": "none"
+    }
+  }
+}

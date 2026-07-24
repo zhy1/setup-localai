@@ -1,0 +1,13 @@
+model = "{{.Model}}"
+model_provider = "kimi_local"
+approval_policy = "never"
+sandbox_mode = "workspace-write"
+
+[model_providers.kimi_local]
+name = "Kimi-K3 Local"
+base_url = "{{.BaseUrl}}"
+experimental_bearer_token = "{{.ApiKey}}"
+wire_api = "responses"
+request_max_retries = 4
+stream_max_retries = 5
+stream_idle_timeout_ms = 600000
