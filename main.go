@@ -91,13 +91,65 @@ func atomicWrite(targetPath string, content []byte) error {
 	return os.Rename(tempFile, targetPath)
 }
 
+func ensurePathExportInFile(rcPath string, installDir string, shellName string) error {
+	if rcPath == "" {
+		return nil
+	}
+	if mkdirErr := os.MkdirAll(filepath.Dir(rcPath), 0o755); mkdirErr != nil {
+		return mkdirErr
+	}
+
+	exportLine := fmt.Sprintf("export PATH=\"%s:$PATH\"", installDir)
+	if _, statErr := os.Stat(rcPath); statErr == nil {
+		content, readErr := os.ReadFile(rcPath)
+		if readErr != nil {
+			return readErr
+		}
+		if strings.Contains(string(content), exportLine) {
+			return nil
+		}
+	}
+
+	comment := fmt.Sprintf("# Added by setup-localai for %s", shellName)
+	var builder strings.Builder
+	if _, statErr := os.Stat(rcPath); statErr == nil {
+		content, readErr := os.ReadFile(rcPath)
+		if readErr != nil {
+			return readErr
+		}
+		builder.Write(content)
+		if len(content) > 0 && content[len(content)-1] != '\n' {
+			builder.WriteByte('\n')
+		}
+	} else {
+		builder.WriteString("")
+	}
+	builder.WriteByte('\n')
+	builder.WriteString(comment)
+	builder.WriteByte('\n')
+	builder.WriteString(exportLine)
+	builder.WriteByte('\n')
+	return atomicWrite(rcPath, []byte(builder.String()))
+}
+
 func syncFileWithBackup(targetPath string, newContent []byte) error {
 	oldContent, readErr := os.ReadFile(targetPath)
 	if readErr == nil {
 		if md5Hex(oldContent) == md5Hex(newContent) {
 			return nil
 		}
+
 		backupPath := targetPath + "." + md5Hex(oldContent)
+		if _, statErr := os.Stat(backupPath); statErr == nil {
+			candidate := backupPath
+			for idx := 1; ; idx++ {
+				candidate = fmt.Sprintf("%s.%d", backupPath, idx)
+				if _, statErr := os.Stat(candidate); os.IsNotExist(statErr) {
+					backupPath = candidate
+					break
+				}
+			}
+		}
 		if renameErr := os.Rename(targetPath, backupPath); renameErr != nil {
 			return renameErr
 		}
@@ -134,8 +186,10 @@ func extractSingleBinary(archiveType string, rawData []byte, wantedBinName strin
 		if zipErr != nil {
 			return nil, zipErr
 		}
+		var fallback []byte
 		for _, entry := range reader.File {
-			if strings.EqualFold(filepath.Base(entry.Name), wantedBinName) {
+			name := filepath.Base(entry.Name)
+			if strings.EqualFold(name, wantedBinName) {
 				fh, openErr := entry.Open()
 				if openErr != nil {
 					return nil, openErr
@@ -143,6 +197,20 @@ func extractSingleBinary(archiveType string, rawData []byte, wantedBinName strin
 				defer fh.Close()
 				return io.ReadAll(fh)
 			}
+			if fallback == nil && isLikelyExecutable(name) {
+				fh, openErr := entry.Open()
+				if openErr != nil {
+					return nil, openErr
+				}
+				defer fh.Close()
+				content, readErr := io.ReadAll(fh)
+				if readErr == nil {
+					fallback = content
+				}
+			}
+		}
+		if fallback != nil {
+			return fallback, nil
 		}
 		return nil, fmt.Errorf("binary %s not found in zip", wantedBinName)
 	case "tar.gz":
@@ -152,6 +220,7 @@ func extractSingleBinary(archiveType string, rawData []byte, wantedBinName strin
 		}
 		defer gzReader.Close()
 		tarReader := tar.NewReader(gzReader)
+		var fallback []byte
 		for {
 			header, nextErr := tarReader.Next()
 			if nextErr == io.EOF {
@@ -160,14 +229,35 @@ func extractSingleBinary(archiveType string, rawData []byte, wantedBinName strin
 			if nextErr != nil {
 				return nil, nextErr
 			}
-			if strings.EqualFold(filepath.Base(header.Name), wantedBinName) {
+			name := filepath.Base(header.Name)
+			if strings.EqualFold(name, wantedBinName) {
 				return io.ReadAll(tarReader)
 			}
+			if fallback == nil && isLikelyExecutable(name) && header.Typeflag == tar.TypeReg {
+				content, readErr := io.ReadAll(tarReader)
+				if readErr == nil {
+					fallback = content
+				}
+			}
+		}
+		if fallback != nil {
+			return fallback, nil
 		}
 		return nil, fmt.Errorf("binary %s not found in tar.gz", wantedBinName)
 	default:
 		return rawData, nil
 	}
+}
+
+func isLikelyExecutable(name string) bool {
+	base := strings.ToLower(filepath.Base(name))
+	if base == "" {
+		return false
+	}
+	if strings.Contains(base, "claude") || strings.Contains(base, "codex") {
+		return true
+	}
+	return strings.HasSuffix(base, ".exe") || strings.HasSuffix(base, ".bin")
 }
 
 func ensureBinaryInstalled(toolLabel string, asset releaseAsset, installDir string) (string, error) {
@@ -272,5 +362,43 @@ func main() {
 		}
 	}
 
-	fmt.Println("add to PATH manually if not already present ->", installDir)
+	if mkdirErr := os.MkdirAll(installDir, 0o755); mkdirErr != nil {
+		fmt.Fprintln(os.Stderr, "install dir prepare failed:", mkdirErr)
+		os.Exit(1)
+	}
+
+	shell := strings.TrimSpace(os.Getenv("SHELL"))
+	shellName := "shell"
+	rcCandidates := []string{}
+	if shell != "" {
+		base := filepath.Base(shell)
+		switch base {
+		case "bash":
+			rcCandidates = append(rcCandidates, filepath.Join(homeDir, ".bashrc"))
+			shellName = "bash"
+		case "zsh":
+			rcCandidates = append(rcCandidates, filepath.Join(homeDir, ".zshrc"))
+			shellName = "zsh"
+		case "sh":
+			rcCandidates = append(rcCandidates, filepath.Join(homeDir, ".profile"))
+			shellName = "sh"
+		default:
+			rcCandidates = append(rcCandidates, filepath.Join(homeDir, ".profile"))
+		}
+	} else {
+		rcCandidates = append(rcCandidates, filepath.Join(homeDir, ".profile"))
+	}
+	if len(rcCandidates) == 0 || rcCandidates[0] != filepath.Join(homeDir, ".profile") {
+		rcCandidates = append(rcCandidates, filepath.Join(homeDir, ".profile"))
+	}
+
+	for _, rcPath := range rcCandidates {
+		if updateErr := ensurePathExportInFile(rcPath, installDir, shellName); updateErr != nil {
+			fmt.Fprintln(os.Stderr, "path export update failed for", rcPath, ":", updateErr)
+		} else {
+			fmt.Println("shell config updated ->", rcPath)
+		}
+	}
+
+	fmt.Println("installation complete; reload your shell or run: source ~/.bashrc")
 }

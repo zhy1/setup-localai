@@ -27,25 +27,25 @@
   },
   "claude": {
     "darwin": {
-      "url": "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096ce9/claude-code-releases/latest/darwin/claude",
+      "url": "https://github.com/anthropics/claude-code/releases/download/v2.1.218/claude-darwin-x64.tar.gz",
       "sha256": "",
-      "version": "latest",
+      "version": "2.1.218",
       "bin_name": "claude",
-      "archive": "none"
+      "archive": "tar.gz"
     },
     "linux": {
-      "url": "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096ce9/claude-code-releases/latest/linux/claude",
+      "url": "https://github.com/anthropics/claude-code/releases/download/v2.1.218/claude-linux-x64.tar.gz",
       "sha256": "",
-      "version": "latest",
+      "version": "2.1.218",
       "bin_name": "claude",
-      "archive": "none"
+      "archive": "tar.gz"
     },
     "windows": {
-      "url": "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096ce9/claude-code-releases/latest/windows/claude.exe",
+      "url": "https://github.com/anthropics/claude-code/releases/download/v2.1.218/claude-win32-x64.zip",
       "sha256": "",
-      "version": "latest",
+      "version": "2.1.218",
       "bin_name": "claude",
-      "archive": "none"
+      "archive": "zip"
     }
   }
 }
