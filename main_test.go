@@ -122,3 +122,23 @@ func TestEnsurePathExportInFileAddsEntryOnce(t *testing.T) {
 		t.Fatalf("expected PATH export to be written once, got %d occurrences", strings.Count(string(contentAgain), line))
 	}
 }
+
+func TestParseInstallOptionsDefaultsToFalse(t *testing.T) {
+	opts, err := parseInstallOptions([]string{})
+	if err != nil {
+		t.Fatalf("parseInstallOptions returned error: %v", err)
+	}
+	if opts.InstallCodex || opts.InstallClaude {
+		t.Fatalf("expected install flags to default to false, got %+v", opts)
+	}
+}
+
+func TestParseInstallOptionsEnablesRequestedTools(t *testing.T) {
+	opts, err := parseInstallOptions([]string{"--install-codex", "--install-claude"})
+	if err != nil {
+		t.Fatalf("parseInstallOptions returned error: %v", err)
+	}
+	if !opts.InstallCodex || !opts.InstallClaude {
+		t.Fatalf("expected requested tools to be enabled, got %+v", opts)
+	}
+}

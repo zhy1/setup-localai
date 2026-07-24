@@ -8,7 +8,7 @@ setup-localai 是一个轻量的本地配置辅助工具，目标是把本地运
 
 - 自动生成 Codex 配置文件：~/.codex/config.toml
 - 自动生成 Claude Code 配置文件：~/.claude.json
-- 自动下载并安装 Codex / Claude Code 二进制文件到 ~/.kimi-toolkit/bin
+- 默认不会下载并安装 Codex / Claude Code 二进制文件；如需安装，可显式传入 --install-codex 和/或 --install-claude
 - 支持 Linux / macOS / Windows
 - 内置默认配置，开箱即用地对接本地兼容 OpenAI 的服务
 
@@ -68,7 +68,7 @@ go build -o setuplocalai .
 
 - 写入 Codex 配置到 ~/.codex/config.toml
 - 写入 Claude 配置到 ~/.claude.json
-- 下载并安装 Codex / Claude 可执行文件到 ~/.kimi-toolkit/bin
+- 默认不安装 Codex / Claude 可执行文件；如需安装可使用 --install-codex 和/或 --install-claude
 
 ### 3. 将安装目录加入 PATH
 

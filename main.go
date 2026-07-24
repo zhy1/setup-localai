@@ -10,6 +10,7 @@ import (
 	_ "embed"
 	"encoding/hex"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"net/http"
@@ -44,6 +45,23 @@ type toolkitVars struct {
 	Model   string                  `json:"model"`
 	Codex   map[string]releaseAsset `json:"codex"`
 	Claude  map[string]releaseAsset `json:"claude"`
+}
+
+type installOptions struct {
+	InstallCodex  bool
+	InstallClaude bool
+}
+
+func parseInstallOptions(args []string) (installOptions, error) {
+	var opts installOptions
+	fs := flag.NewFlagSet("setup-localai", flag.ContinueOnError)
+	fs.SetOutput(io.Discard)
+	fs.BoolVar(&opts.InstallCodex, "install-codex", false, "install the codex binary")
+	fs.BoolVar(&opts.InstallClaude, "install-claude", false, "install the claude binary")
+	if err := fs.Parse(args); err != nil {
+		return installOptions{}, err
+	}
+	return opts, nil
 }
 
 func loadVars() toolkitVars {
@@ -315,6 +333,12 @@ func ensureBinaryInstalled(toolLabel string, asset releaseAsset, installDir stri
 }
 
 func main() {
+	opts, err := parseInstallOptions(os.Args[1:])
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "parse install options failed:", err)
+		os.Exit(1)
+	}
+
 	vars := loadVars()
 	currentOs := osKey()
 
@@ -344,22 +368,30 @@ func main() {
 	}
 	fmt.Println("claude config synced ->", claudeConfigPath)
 
-	if codexAsset, ok := vars.Codex[currentOs]; ok {
-		codexPath, installErr := ensureBinaryInstalled("codex", codexAsset, installDir)
-		if installErr != nil {
-			fmt.Fprintln(os.Stderr, "codex install failed:", installErr)
-		} else {
-			fmt.Println("codex ready ->", codexPath, "version", codexAsset.Version)
+	if opts.InstallCodex {
+		if codexAsset, ok := vars.Codex[currentOs]; ok {
+			codexPath, installErr := ensureBinaryInstalled("codex", codexAsset, installDir)
+			if installErr != nil {
+				fmt.Fprintln(os.Stderr, "codex install failed:", installErr)
+			} else {
+				fmt.Println("codex ready ->", codexPath, "version", codexAsset.Version)
+			}
 		}
+	} else {
+		fmt.Println("codex install skipped; pass --install-codex to enable")
 	}
 
-	if claudeAsset, ok := vars.Claude[currentOs]; ok {
-		claudePath, installErr := ensureBinaryInstalled("claude-code", claudeAsset, installDir)
-		if installErr != nil {
-			fmt.Fprintln(os.Stderr, "claude-code install failed:", installErr)
-		} else {
-			fmt.Println("claude-code ready ->", claudePath, "version", claudeAsset.Version)
+	if opts.InstallClaude {
+		if claudeAsset, ok := vars.Claude[currentOs]; ok {
+			claudePath, installErr := ensureBinaryInstalled("claude-code", claudeAsset, installDir)
+			if installErr != nil {
+				fmt.Fprintln(os.Stderr, "claude-code install failed:", installErr)
+			} else {
+				fmt.Println("claude-code ready ->", claudePath, "version", claudeAsset.Version)
+			}
 		}
+	} else {
+		fmt.Println("claude install skipped; pass --install-claude to enable")
 	}
 
 	if mkdirErr := os.MkdirAll(installDir, 0o755); mkdirErr != nil {
