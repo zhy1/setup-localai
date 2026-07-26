@@ -86,7 +86,9 @@ You can also place this line in your shell config file such as ~/.bashrc or ~/.z
 
 ### Customize default settings
 
-Edit [assets/vars.json](assets/vars.json), rebuild, and then run the program again:
+The program now reads an external vars.json file with the highest priority. It will first try the path from the SETUP_LOCALAI_VARS_JSON environment variable, then look for vars.json in the current working directory, and finally fall back to the embedded defaults in [assets/vars.json](assets/vars.json).
+
+You can override values without rebuilding by creating a vars.json file next to the binary or setting SETUP_LOCALAI_VARS_JSON:
 
 ```json
 {
@@ -95,6 +97,10 @@ Edit [assets/vars.json](assets/vars.json), rebuild, and then run the program aga
   "model": "your model"
 }
 ```
+
+### Release automation
+
+The repository includes a GitHub Actions workflow that builds six platform targets and uploads them to GitHub Releases when a tag matching v* is pushed.
 
 ### Generated files
 

@@ -142,3 +142,28 @@ func TestParseInstallOptionsEnablesRequestedTools(t *testing.T) {
 		t.Fatalf("expected requested tools to be enabled, got %+v", opts)
 	}
 }
+
+func TestLoadVarsPrefersExternalOverrideFile(t *testing.T) {
+	tmpDir := t.TempDir()
+	overridePath := filepath.Join(tmpDir, "vars.json")
+	overrideContent := []byte(`{"api_key":"override-key","base_url":"https://override.test/v1","model":"override-model"}`)
+	if err := os.WriteFile(overridePath, overrideContent, 0o600); err != nil {
+		t.Fatalf("write override vars: %v", err)
+	}
+
+	t.Setenv("SETUP_LOCALAI_VARS_JSON", overridePath)
+
+	vars := loadVars()
+	if vars.ApiKey != "override-key" {
+		t.Fatalf("expected api_key override, got %q", vars.ApiKey)
+	}
+	if vars.BaseUrl != "https://override.test/v1" {
+		t.Fatalf("expected base_url override, got %q", vars.BaseUrl)
+	}
+	if vars.Model != "override-model" {
+		t.Fatalf("expected model override, got %q", vars.Model)
+	}
+	if vars.Codex["linux"].Version != "latest" {
+		t.Fatalf("expected embedded codex defaults to remain available, got %q", vars.Codex["linux"].Version)
+	}
+}

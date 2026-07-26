@@ -39,9 +39,18 @@ echo "Building $projectname version $version for $platform/$arch"
 GOOS="$platform" GOARCH="$arch" CGO_ENABLED="${CGO_ENABLED:-0}" \
   go build -trimpath -ldflags='-s -w' -o "$build_dir/$binary_name" .
 
-archive_name="${projectname}_${version}_${platform}_${arch}_${timestamp}.tar.gz"
+archive_ext="tar.gz"
+if [[ "$platform" == "windows" ]]; then
+  archive_ext="zip"
+fi
+
+archive_name="${projectname}_${version}_${platform}_${arch}_${timestamp}.${archive_ext}"
 archive_path="$output_dir/$archive_name"
 
-tar -czf "$archive_path" -C "$build_dir" "$binary_name"
+if [[ "$archive_ext" == "zip" ]]; then
+  (cd "$build_dir" && zip -rq "$archive_path" "$binary_name")
+else
+  tar -czf "$archive_path" -C "$build_dir" "$binary_name"
+fi
 
 echo "Created $archive_path"

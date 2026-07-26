@@ -84,7 +84,9 @@ export PATH="$HOME/.kimi-toolkit/bin:$PATH"
 
 ### 修改默认配置
 
-编辑 [assets/vars.json](assets/vars.json) 后重新构建并运行即可：
+程序现在会优先读取外部 vars.json 文件作为最高优先级。它会先检查 SETUP_LOCALAI_VARS_JSON 环境变量指定的路径，然后查找当前工作目录下的 vars.json，最后回退到内置的 [assets/vars.json](assets/vars.json) 默认值。
+
+不需要重新构建即可通过在可执行文件旁边放置 vars.json，或者设置 SETUP_LOCALAI_VARS_JSON 来覆盖配置：
 
 ```json
 {
@@ -93,6 +95,10 @@ export PATH="$HOME/.kimi-toolkit/bin:$PATH"
   "model": "你的模型名"
 }
 ```
+
+### 发布自动化
+
+仓库包含一个 GitHub Actions 工作流，会构建 6 个系统平台的产物，并在推送 v* 标签时自动上传到 GitHub Releases。
 
 ### 生成内容
 

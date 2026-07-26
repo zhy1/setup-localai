@@ -64,12 +64,123 @@ func parseInstallOptions(args []string) (installOptions, error) {
 	return opts, nil
 }
 
+func loadVarsFromFile(path string) (toolkitVars, error) {
+	var v toolkitVars
+	content, readErr := os.ReadFile(path)
+	if readErr != nil {
+		return toolkitVars{}, readErr
+	}
+	if unmarshalErr := json.Unmarshal(content, &v); unmarshalErr != nil {
+		return toolkitVars{}, fmt.Errorf("vars.json parse failed for %s: %w", path, unmarshalErr)
+	}
+	return v, nil
+}
+
+func mergeVars(base toolkitVars, override toolkitVars) toolkitVars {
+	if override.ApiKey != "" {
+		base.ApiKey = override.ApiKey
+	}
+	if override.BaseUrl != "" {
+		base.BaseUrl = override.BaseUrl
+	}
+	if override.Model != "" {
+		base.Model = override.Model
+	}
+	if override.Codex != nil {
+		if base.Codex == nil {
+			base.Codex = map[string]releaseAsset{}
+		}
+		for platform, asset := range override.Codex {
+			if existing, ok := base.Codex[platform]; ok {
+				if asset.Url != "" {
+					existing.Url = asset.Url
+				}
+				if asset.Sha256 != "" {
+					existing.Sha256 = asset.Sha256
+				}
+				if asset.Version != "" {
+					existing.Version = asset.Version
+				}
+				if asset.BinName != "" {
+					existing.BinName = asset.BinName
+				}
+				if asset.Archive != "" {
+					existing.Archive = asset.Archive
+				}
+				base.Codex[platform] = existing
+			} else {
+				base.Codex[platform] = asset
+			}
+		}
+	}
+	if override.Claude != nil {
+		if base.Claude == nil {
+			base.Claude = map[string]releaseAsset{}
+		}
+		for platform, asset := range override.Claude {
+			if existing, ok := base.Claude[platform]; ok {
+				if asset.Url != "" {
+					existing.Url = asset.Url
+				}
+				if asset.Sha256 != "" {
+					existing.Sha256 = asset.Sha256
+				}
+				if asset.Version != "" {
+					existing.Version = asset.Version
+				}
+				if asset.BinName != "" {
+					existing.BinName = asset.BinName
+				}
+				if asset.Archive != "" {
+					existing.Archive = asset.Archive
+				}
+				base.Claude[platform] = existing
+			} else {
+				base.Claude[platform] = asset
+			}
+		}
+	}
+	return base
+}
+
 func loadVars() toolkitVars {
 	var v toolkitVars
 	if unmarshalErr := json.Unmarshal(embeddedVars, &v); unmarshalErr != nil {
 		fmt.Fprintln(os.Stderr, "embedded vars.json parse failed:", unmarshalErr)
 		os.Exit(1)
 	}
+
+	candidatePaths := []string{}
+	if envPath := strings.TrimSpace(os.Getenv("SETUP_LOCALAI_VARS_JSON")); envPath != "" {
+		candidatePaths = append(candidatePaths, envPath)
+	}
+
+	cwd, cwdErr := os.Getwd()
+	if cwdErr == nil {
+		candidatePaths = append(candidatePaths, filepath.Join(cwd, "vars.json"), filepath.Join(cwd, "assets", "vars.json"))
+	}
+
+	homeDir, homeErr := os.UserHomeDir()
+	if homeErr == nil {
+		candidatePaths = append(candidatePaths, filepath.Join(homeDir, "vars.json"))
+	}
+
+	for _, candidatePath := range candidatePaths {
+		if candidatePath == "" {
+			continue
+		}
+		overrideVars, readErr := loadVarsFromFile(candidatePath)
+		if readErr != nil {
+			if os.IsNotExist(readErr) {
+				continue
+			}
+			fmt.Fprintln(os.Stderr, "override vars.json load failed:", readErr)
+			os.Exit(1)
+		}
+		v = mergeVars(v, overrideVars)
+		break
+	}
+
 	return v
 }
 
