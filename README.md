@@ -102,6 +102,16 @@ You can override values without rebuilding by creating a vars.json file next to 
 
 The repository includes a GitHub Actions workflow that builds six platform targets and uploads them to GitHub Releases when a tag matching v* is pushed.
 
+### One-click release script
+
+Use `release.sh` to create an annotated tag and push both the branch and tag to GitHub.
+
+```bash
+./release.sh 1.0.0
+```
+
+This will create and push `v1.0.0`, which triggers the release workflow and publishes the built binaries.
+
 ### Generated files
 
 The program will generate:

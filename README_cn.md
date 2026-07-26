@@ -100,6 +100,16 @@ export PATH="$HOME/.kimi-toolkit/bin:$PATH"
 
 仓库包含一个 GitHub Actions 工作流，会构建 6 个系统平台的产物，并在推送 v* 标签时自动上传到 GitHub Releases。
 
+### 一键发布脚本
+
+使用 `release.sh` 来创建注释标签并将当前分支与标签推送到 GitHub。
+
+```bash
+./release.sh 1.0.0
+```
+
+这将创建并推送 `v1.0.0`，触发发布工作流并上传已构建的二进制文件。
+
 ### 生成内容
 
 程序会生成以下文件：
