@@ -1,4 +1,4 @@
-# setup-localai
+# Setup Local AI
 
 setup-localai is a lightweight local configuration helper designed to automatically configure common CLI tools such as Codex and Claude Code to work with a locally running LLM service that exposes an OpenAI-compatible API.
 
